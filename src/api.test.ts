@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { uploadGrid, UploadError } from './api';
+import { fetchGrids, uploadGrid, UploadError } from './api';
 
 const input = {
   apiUrl: 'https://api.example.org',
@@ -54,5 +54,18 @@ describe('uploadGrid', () => {
     const error = await uploadGrid(input).catch((e) => e);
     expect(error).toBeInstanceOf(UploadError);
     expect(error.reason).toBe(reason);
+  });
+});
+
+describe('fetchGrids', () => {
+  test('gets all grids from /grid', async () => {
+    const fetch = mockFetch(200, [{ id: 1, name: 'Zensus', size: '1km', srid: 3035 }]);
+    await expect(fetchGrids('https://api.example.org/')).resolves.toEqual([{ id: 1, name: 'Zensus', size: '1km', srid: 3035 }]);
+    expect(fetch.mock.calls[0][0]).toBe('https://api.example.org/grid');
+  });
+
+  test('rejects when the api fails', async () => {
+    mockFetch(500);
+    await expect(fetchGrids('https://api.example.org')).rejects.toThrow();
   });
 });
