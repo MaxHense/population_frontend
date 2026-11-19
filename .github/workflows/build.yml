@@ -1,10 +1,9 @@
 name: Build frontend
 
+# Runs on every push (any branch), every PR and manually.
 on:
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -20,4 +19,5 @@ jobs:
         node-version: 24
         cache: npm
     - run: npm ci
+    - run: npm test
     - run: npm run build
