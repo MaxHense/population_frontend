@@ -8,7 +8,10 @@ export type DataDefinition = {
   delimiter: string;
   decode: string;
 };
-export type Grid = GridInput & { id: number; number_of_location: number };
+export type StoredGrid = GridInput & { id: number };
+export type Grid = StoredGrid & { number_of_location: number };
+
+const join = (apiUrl: string, path: string) => `${apiUrl.replace(/\/+$/, '')}${path}`;
 
 export type UploadReason = 'unauthorized' | 'disabled' | 'invalid' | 'failed';
 
@@ -35,11 +38,17 @@ export async function uploadGrid(input: {
   form.append('data_definition', JSON.stringify(input.dataDefinition));
   form.append('file', input.file);
 
-  const response = await fetch(`${input.apiUrl.replace(/\/+$/, '')}/admin/grids`, {
+  const response = await fetch(join(input.apiUrl, '/admin/grids'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${input.token}` },
     body: form,
   });
   if (!response.ok) throw new UploadError(REASONS[response.status] ?? 'failed');
+  return response.json();
+}
+
+export async function fetchGrids(apiUrl: string): Promise<StoredGrid[]> {
+  const response = await fetch(join(apiUrl, '/grid'));
+  if (!response.ok) throw new Error(`Loading grids failed: ${response.status}`);
   return response.json();
 }

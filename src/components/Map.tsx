@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapWithMarkers } from './MapWithMarkers';
 import { MapActions } from './MapActions';
 import type { LatLngExpression } from 'leaflet';
 import { latLngsToWktPolygon } from '../wkt';
-import { API_URL } from '../api';
+import { API_URL, fetchGrids } from '../api';
 
 const germanyCenter: LatLngExpression = [51.255583, 10.352611];
 
@@ -12,6 +12,14 @@ function GermanyMap() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<number | null>(null);
   const [markerPositions, setMarkerPositions] = useState<LatLngExpression[]>([]);
+  // ponytail: first grid only, add a grid picker when there is more than one dataset
+  const [gridId, setGridId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchGrids(API_URL)
+      .then((grids) => setGridId(grids[0]?.id ?? null))
+      .catch(() => setGridId(null));
+  }, []);
 
   const handleClear = () => {
     setClearSignal(true);
@@ -20,6 +28,10 @@ function GermanyMap() {
   };
 
   const handleRequest = async () => {
+    if (gridId === null) {
+      alert('No population data yet. Upload a grid on /admin.');
+      return;
+    }
     if (markerPositions.length < 3) {
       alert('Please set at least 3 markers to form a polygon.');
       return;
@@ -29,7 +41,7 @@ function GermanyMap() {
     try {
       const polygon = latLngsToWktPolygon(markerPositions);
       const body = {
-        grid_id: 8,
+        grid_id: gridId,
         polygon_srid: 4326,
         polygon,
       };
