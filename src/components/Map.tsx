@@ -3,6 +3,7 @@ import { MapWithMarkers } from './MapWithMarkers';
 import { MapActions } from './MapActions';
 import type { LatLngExpression } from 'leaflet';
 import { latLngsToWktPolygon } from '../wkt';
+import { API_URL } from '../api';
 
 const germanyCenter: LatLngExpression = [51.255583, 10.352611];
 
@@ -32,7 +33,7 @@ function GermanyMap() {
         polygon_srid: 4326,
         polygon,
       };
-      const response = await fetch('http://localhost:8000/', {
+      const response = await fetch(`${API_URL}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -60,7 +61,7 @@ function GermanyMap() {
           result={result}
           loading={loading}
           onRequest={handleRequest}
-          endpoint="http://localhost:8000/"
+          endpoint={`${API_URL}/`}
         />
       </div>
       <MapWithMarkers
