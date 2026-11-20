@@ -201,6 +201,37 @@
   color: #000; /* keep the button readable on the blue selection */
 }
 
+/* context menu: native popover placed at the cursor */
+.w95-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  min-width: 140px;
+  padding: 3px;
+  border: none;
+  background: var(--w95-face);
+  color: #000;
+  font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 12px;
+  box-shadow: var(--w95-raised);
+}
+.w95-menu-item {
+  display: block;
+  width: 100%;
+  padding: 3px 20px;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: default;
+}
+.w95-menu-item:hover,
+.w95-menu-item:focus-visible {
+  background: var(--w95-select);
+  color: var(--w95-white);
+  outline: none;
+}
+
 /* dialogs: native <dialog>, Win95 window frame, no dimmed backdrop */
 .w95-dialog {
   margin: auto; /* Tailwind's reset sets margin: 0, which breaks native centring */

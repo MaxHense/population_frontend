@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
 import type { LatLngExpression } from 'leaflet';
+import { ContextMenu } from './ContextMenu';
 import { MapWithMarkers } from './MapWithMarkers';
 import { Win95Dialog } from './Win95Dialog';
 import { latLngsToWktPolygon } from '../wkt';
@@ -9,6 +10,8 @@ import {
   type CopyKind, type Entry, type LatLng,
 } from '../history';
 import { markerSvg, personSvg } from '../icons';
+import { edgesCross } from '../polygon';
+import { canRedo, canUndo, push, redo, start, undo } from '../undo';
 import '../win95.css';
 
 const germanyCenter: LatLngExpression = [51.255583, 10.352611];
@@ -16,6 +19,7 @@ const MARKER_ICON = { __html: markerSvg(16) }; // static, generated from our own
 const PERSON_ICON = { __html: personSvg(16) };
 const EXAMPLE = '52.5200, 13.4050; 52.4000, 13.5123; 52.4500, 13.3000';
 const HINT = 'Click the map to set at least 3 markers or enter 3 coordinates in the input field.';
+const CROSSING = 'Edges cross. Drag a point so the outline does not cross itself.';
 const MESSAGE_MS = 5000; // messages replace the hint for a moment
 const COPIED: Record<CopyKind, string> = { all: 'Entry copied.', coordinates: 'Coordinates copied.', population: 'Population copied.' };
 
@@ -27,11 +31,15 @@ function browserStorage() {
   }
 }
 
+const isTyping = (target: EventTarget | null) =>
+  target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+
 function GermanyMap() {
   const [history, setHistory] = useState<Entry[]>(() => loadHistory(browserStorage()));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [fitKey, setFitKey] = useState<string | null>(null); // new value = zoom to markers
-  const [markers, setMarkers] = useState<LatLng[]>([]);
+  const [edits, setEdits] = useState(() => start<LatLng[]>([]));
+  const [menu, setMenu] = useState<{ index: number; x: number; y: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [coordInput, setCoordInput] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -54,20 +62,46 @@ function GermanyMap() {
 
   useEffect(() => saveHistory(history, browserStorage()), [history]);
 
+  const markers = edits.present;
+  const crossing = edgesCross(markers);
+
   const changeMarkers = (next: LatLng[]) => {
-    setMarkers(next);
+    setEdits((h) => push(h, next));
     setSelectedId(null); // edited markers no longer match the selected entry
   };
 
+  const undoMarkers = () => {
+    setEdits(undo);
+    setSelectedId(null);
+  };
+
+  const redoMarkers = () => {
+    setEdits(redo);
+    setSelectedId(null);
+  };
+
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || isTyping(e.target)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) undoMarkers();
+      else if (key === 'y' || (key === 'z' && e.shiftKey)) redoMarkers();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const select = (entry: Entry) => {
+    setEdits((h) => push(h, entry.markers));
     setSelectedId(entry.id);
-    setMarkers(entry.markers);
     setFitKey(`${entry.id}-${Date.now()}`);
   };
 
   const startNew = () => {
+    if (markers.length > 0) setEdits((h) => push(h, []));
     setSelectedId(null);
-    setMarkers([]);
     setCoordInput('');
     setMessage(null);
   };
@@ -98,6 +132,7 @@ function GermanyMap() {
       setMessage('Set at least 3 markers to form a polygon.');
       return;
     }
+    if (crossing) return;
     setBusy(true);
     try {
       const population = await countPopulation(API_URL, gridId, latLngsToWktPolygon(markers));
@@ -138,14 +173,19 @@ function GermanyMap() {
   return (
     <div className="w95-app">
       <aside className="w95-sidebar">
-        <div className="w95-status" role="status">{busy ? 'Enumerating…' : message ?? HINT}</div>
+        <div className="w95-status" role="status">{busy ? 'Enumerating…' : (crossing && CROSSING) || message || HINT}</div>
 
         <div className="w95-toolbar">
-          <button type="button" className="w95-button" onClick={enumerate} disabled={busy}>Enumerate</button>
+          <button type="button" className="w95-button" onClick={enumerate} disabled={busy || crossing}>Enumerate</button>
           <button type="button" className="w95-button" onClick={startNew}>New</button>
           <button type="button" className="w95-button" onClick={() => setConfirmClear(true)} disabled={history.length === 0}>
             Clear
           </button>
+        </div>
+
+        <div className="w95-toolbar">
+          <button type="button" className="w95-button" onClick={undoMarkers} disabled={!canUndo(edits)} title="Undo (Ctrl+Z)">Undo</button>
+          <button type="button" className="w95-button" onClick={redoMarkers} disabled={!canRedo(edits)} title="Redo (Ctrl+Y)">Redo</button>
         </div>
 
         <input
@@ -205,10 +245,18 @@ function GermanyMap() {
         <MapWithMarkers
           center={germanyCenter}
           markers={markers}
+          crossing={crossing}
           onMarkersChange={changeMarkers}
+          onMarkerMenu={(index, x, y) => setMenu({ index, x, y })}
           fitKey={fitKey}
         />
       </main>
+
+      <ContextMenu
+        at={menu}
+        items={[{ label: 'Delete point', onSelect: () => menu && changeMarkers(markers.filter((_, i) => i !== menu.index)) }]}
+        onClose={() => setMenu(null)}
+      />
 
       <Win95Dialog title="Copy" open={copyEntry !== null} onClose={() => setCopyEntry(null)}>
         <div className="w95-dialog-actions w95-dialog-stack">

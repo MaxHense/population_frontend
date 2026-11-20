@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { CLOSE_ART, MARKER_ART, PERSON_ART, pixelSvg } from './icons';
+import { CLOSE_ART, GRIP_ART, MARKER_ART, PERSON_ART, pixelSvg } from './icons';
 
 describe('pixelSvg', () => {
   test('one rect per horizontal run of the same colour, dots are transparent', () => {
@@ -29,4 +29,9 @@ describe.each([['marker', MARKER_ART], ['person', PERSON_ART]])('%s art', (_, ar
 test('close cross is a regular 8x7 grid', () => {
   expect(CLOSE_ART).toHaveLength(7);
   CLOSE_ART.forEach((row) => expect(row).toHaveLength(8));
+});
+
+test('grip is a regular 10x10 grid', () => {
+  expect(GRIP_ART).toHaveLength(10);
+  GRIP_ART.forEach((row) => expect(row).toHaveLength(10));
 });

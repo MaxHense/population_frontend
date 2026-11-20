@@ -72,8 +72,23 @@ export const CLOSE_ART = [
   'KK....KK',
 ];
 
+// Raised grey square, like the resize grips in Win95 Paint.
+export const GRIP_ART = [
+  'WWWWWWWWWK',
+  'WLLLLLLLGK',
+  'WLSSSSSSGK',
+  'WLSSSSSSGK',
+  'WLSSSSSSGK',
+  'WLSSSSSSGK',
+  'WLSSSSSSGK',
+  'WLSSSSSSGK',
+  'WGGGGGGGGK',
+  'KKKKKKKKKK',
+];
+
 const MARKER_COLOURS = { K: '#000000', R: '#ff0000', D: '#800000', W: '#ffffff', S: '#c0c0c0', G: '#808080' };
 
 export const markerSvg = (size: number) => pixelSvg(MARKER_ART, MARKER_COLOURS, size);
 export const personSvg = (size: number) => pixelSvg(PERSON_ART, { '#': 'currentColor' }, size);
 export const closeSvg = () => pixelSvg(CLOSE_ART, { K: '#000000' }, 8);
+export const gripSvg = (size: number) => pixelSvg(GRIP_ART, { W: '#ffffff', L: '#dfdfdf', S: '#c0c0c0', G: '#808080', K: '#000000' }, size);
