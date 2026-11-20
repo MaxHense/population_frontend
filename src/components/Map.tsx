@@ -6,9 +6,12 @@ import { API_URL, countPopulation, fetchGrids } from '../api';
 import {
   addEntry, formatCoordinates, formatPopulation, loadHistory, saveHistory, type Entry, type LatLng,
 } from '../history';
+import { markerSvg, personSvg } from '../icons';
 import '../win95.css';
 
 const germanyCenter: LatLngExpression = [51.255583, 10.352611];
+const MARKER_ICON = { __html: markerSvg(16) }; // static, generated from our own pixel art
+const PERSON_ICON = { __html: personSvg(16) };
 
 function browserStorage() {
   try {
@@ -106,8 +109,14 @@ function GermanyMap() {
                 onClick={() => select(entry)}
                 onKeyDown={(e) => onRowKey(e, entry)}
               >
-                <div className="w95-coords" title={coordinates}>{coordinates}</div>
-                <div className="w95-result">{formatPopulation(entry.population)}</div>
+                <div className="w95-line">
+                  <span className="w95-icon" dangerouslySetInnerHTML={MARKER_ICON} />
+                  <span className="w95-coords" title={coordinates}>{coordinates}</span>
+                </div>
+                <div className="w95-line w95-result">
+                  <span className="w95-icon" dangerouslySetInnerHTML={PERSON_ICON} />
+                  <span>{formatPopulation(entry.population)}</span>
+                </div>
               </li>
             );
           })}

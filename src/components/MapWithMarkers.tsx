@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvent } from 'react-leaflet';
-import type { LatLngExpression } from 'leaflet';
+import { divIcon, type LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LatLng } from '../history';
+import { markerSvg } from '../icons';
+
+// 16x16 pixel pin drawn at 2x; anchor = needle tip (bottom centre)
+const pinIcon = divIcon({ html: markerSvg(32), className: 'w95-pin', iconSize: [32, 32], iconAnchor: [16, 31] });
 
 type MapWithMarkersProps = {
   center: LatLngExpression;
@@ -38,6 +42,7 @@ export function MapWithMarkers({ center, zoom = 6, markers, onMarkersChange, fit
         <Marker
           key={`${idx}-${pos[0]}-${pos[1]}`}
           position={pos}
+          icon={pinIcon}
           eventHandlers={{ click: () => onMarkersChange(markers.filter((_, i) => i !== idx)) }}
         />
       ))}

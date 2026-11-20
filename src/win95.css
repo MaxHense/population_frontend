@@ -89,10 +89,35 @@
   outline-color: var(--w95-white);
 }
 
+.w95-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.w95-icon {
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
 .w95-coords {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* map pin: plain pixel art, no Leaflet default box */
+.w95-pin {
+  background: none;
+  border: none;
+}
+.w95-pin svg {
+  display: block;
 }
 
 /* second line indented like an Explorer tree, with the dotted connector */
@@ -106,7 +131,7 @@
   left: 7px;
   top: 0;
   width: 10px;
-  height: 9px;
+  height: 9px; /* to the middle of the line */
   border-left: 1px dotted currentColor;
   border-bottom: 1px dotted currentColor;
   opacity: 0.6;
