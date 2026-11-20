@@ -1,79 +1,102 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvent } from 'react-leaflet';
-import type { LatLngExpression, LeafletMouseEvent } from 'leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Polygon, Tooltip, useMap, useMapEvent } from 'react-leaflet';
+import { divIcon, type LatLngExpression, type LeafletEvent, type LeafletMouseEvent, type Marker as LeafletMarker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { Cell } from '../api';
+import { formatPopulation, type LatLng } from '../history';
+import { gripSvg, markerSvg } from '../icons';
+import { midpoints } from '../polygon';
+
+const pinIcon = divIcon({ html: markerSvg(24), className: 'w95-pin', iconSize: [24, 24], iconAnchor: [12, 23] });
+const gripIcon = divIcon({ html: gripSvg(10), className: 'w95-pin', iconSize: [10, 10], iconAnchor: [5, 5] });
+
+// not interactive: a click inside the polygon still sets a marker
+const outline = { color: '#000000', weight: 1, fillColor: '#808080', fillOpacity: 0.3, interactive: false };
+const crossingOutline = { ...outline, color: '#ff0000', weight: 2 };
+const cellStyle = { color: '#008080', weight: 1, fillColor: '#008080', fillOpacity: 0.35 };
 
 type MapWithMarkersProps = {
   center: LatLngExpression;
   zoom?: number;
-  clearSignal: boolean;
-  onMarkersChange?: (positions: LatLngExpression[]) => void; // <-- Add this line
+  markers: LatLng[];
+  cells: Cell[] | null;
+  crossing: boolean;
+  onMarkersChange: (markers: LatLng[]) => void;
+  onMarkerMenu: (index: number, x: number, y: number) => void;
+  fitKey: string | null;
 };
 
-function isLatLngObject(obj: any): obj is { lat: number; lng: number } {
-  return obj && typeof obj.lat === 'number' && typeof obj.lng === 'number';
+const positionOf = (e: LeafletEvent): LatLng => {
+  const { lat, lng } = (e.target as LeafletMarker).getLatLng();
+  return [lat, lng];
+};
+
+const replaceAt = (list: LatLng[], index: number, point: LatLng) => list.map((p, i) => (i === index ? point : p));
+const insertAt = (list: LatLng[], index: number, point: LatLng) => [...list.slice(0, index), point, ...list.slice(index)];
+
+function ClickToAdd({ onAdd }: { onAdd: (marker: LatLng) => void }) {
+  useMapEvent('click', (e) => onAdd([e.latlng.lat, e.latlng.lng]));
+  return null;
 }
 
-function areLatLngEqual(a: LatLngExpression, b: LatLngExpression) {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a[0] === b[0] && a[1] === b[1];
-  }
-  if (isLatLngObject(a) && isLatLngObject(b)) {
-    return a.lat === b.lat && a.lng === b.lng;
-  }
-  return false;
+function FitToMarkers({ markers, fitKey }: { markers: LatLng[]; fitKey: string | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (fitKey && markers.length > 0) map.fitBounds(markers, { padding: [40, 40], maxZoom: 12 });
+  }, [fitKey]); // only on a new fitKey, not on every marker change
+  return null;
 }
 
-function ClickMarkers({ clearSignal, onMarkersChange }: { clearSignal: boolean; onMarkersChange?: (positions: LatLngExpression[]) => void }) {
-  const [positions, setPositions] = useState<{ pos: LatLngExpression }[]>([]);
-
-  useMapEvent('click', (e: LeafletMouseEvent) => {
-    setPositions((prev) => {
-      const updated = [...prev, { pos: e.latlng }];
-      console.log(updated);
-      return updated;
-    });
-  });
-
-  useEffect(() => {
-    if (clearSignal) {
-      setPositions([]);
-    }
-  }, [clearSignal]);
-
-  useEffect(() => {
-    if (onMarkersChange) {
-      onMarkersChange(positions.map(p => p.pos));
-    }
-  }, [positions, onMarkersChange]);
-
-  const handleMarkerClick = (clickedPos: LatLngExpression) => {
-    setPositions((prev) => prev.filter(({ pos }) => !(areLatLngEqual(pos, clickedPos))));
+export function MapWithMarkers({
+  center, zoom = 6, markers, cells, crossing, onMarkersChange, onMarkerMenu, fitKey,
+}: MapWithMarkersProps) {
+  const openMenu = (index: number) => (e: LeafletMouseEvent) => {
+    e.originalEvent.preventDefault();
+    onMarkerMenu(index, e.originalEvent.clientX, e.originalEvent.clientY);
   };
 
-  return (
-    <>
-      {positions.map(({ pos }, idx) => (
-        <Marker
-          key={idx}
-          position={pos}
-          eventHandlers={{
-            click: () => handleMarkerClick(pos),
-          }}
-        />
-      ))}
-    </>
-  );
-}
-
-export function MapWithMarkers({ center, zoom = 6, clearSignal, onMarkersChange }: MapWithMarkersProps) {
   return (
     <MapContainer center={center} zoom={zoom} style={{ width: '100%', height: '100%' }}>
       <TileLayer
         attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <ClickMarkers clearSignal={clearSignal} onMarkersChange={onMarkersChange} />
+      <ClickToAdd onAdd={(m) => onMarkersChange([...markers, m])} />
+      <FitToMarkers markers={markers} fitKey={fitKey} />
+      {cells?.map((cell, i) => (
+        <Polygon key={`cell-${i}-${cell.polygon[0].join()}`} positions={cell.polygon} pathOptions={cellStyle}>
+          <Tooltip sticky className="w95-tip">{formatPopulation(cell.population)} people</Tooltip>
+        </Polygon>
+      ))}
+      {markers.length >= 2 && <Polygon positions={markers} pathOptions={crossing ? crossingOutline : outline} />}
+
+      {midpoints(markers).map(({ insertAt: index, point }) => (
+        <Marker
+          key={`mid-${index}-${point[0]}-${point[1]}`}
+          position={point}
+          icon={gripIcon}
+          draggable
+          title="Drag or click to add a point"
+          eventHandlers={{
+            click: () => onMarkersChange(insertAt(markers, index, point)),
+            dragend: (e) => onMarkersChange(insertAt(markers, index, positionOf(e))),
+          }}
+        />
+      ))}
+
+      {markers.map((pos, index) => (
+        <Marker
+          key={`${index}-${pos[0]}-${pos[1]}`}
+          position={pos}
+          icon={pinIcon}
+          draggable
+          title="Drag to move, right-click for more"
+          eventHandlers={{
+            dragend: (e) => onMarkersChange(replaceAt(markers, index, positionOf(e))),
+            contextmenu: openMenu(index),
+          }}
+        />
+      ))}
     </MapContainer>
   );
 }

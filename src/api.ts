@@ -52,3 +52,17 @@ export async function fetchGrids(apiUrl: string): Promise<StoredGrid[]> {
   if (!response.ok) throw new Error(`Loading grids failed: ${response.status}`);
   return response.json();
 }
+
+export type Cell = { population: number; polygon: [number, number][] };
+export type Count = { population: number | null; cells: Cell[] | null };
+
+export async function countPopulation(apiUrl: string, gridId: number, wktPolygon: string): Promise<Count> {
+  const response = await fetch(join(apiUrl, '/'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grid_id: gridId, polygon_srid: 4326, polygon: wktPolygon }),
+  });
+  if (!response.ok) throw new Error(`Counting failed: ${response.status}`);
+  const { population, cells } = await response.json();
+  return { population, cells: cells ?? null };
+}
