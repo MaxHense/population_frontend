@@ -4,7 +4,7 @@ import { ContextMenu } from './ContextMenu';
 import { MapWithMarkers } from './MapWithMarkers';
 import { Win95Dialog } from './Win95Dialog';
 import { latLngsToWktPolygon } from '../wkt';
-import { API_URL, countPopulation, fetchGrids } from '../api';
+import { API_URL, countPopulation, fetchGrids, type Cell } from '../api';
 import {
   addEntry, copyText, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory,
   type CopyKind, type Entry, type LatLng,
@@ -20,6 +20,8 @@ const PERSON_ICON = { __html: personSvg(16) };
 const EXAMPLE = '52.5200, 13.4050; 52.4000, 13.5123; 52.4500, 13.3000';
 const HINT = 'Click the map to set at least 3 markers or enter 3 coordinates in the input field.';
 const CROSSING = 'Edges cross. Drag a point so the outline does not cross itself.';
+const NO_CELLS = 'No cell centre is inside the polygon. A cell counts only if its centre is inside.';
+const TOO_MANY_CELLS = 'Too many cells to show on the map (more than 2.000).';
 const MESSAGE_MS = 5000; // messages replace the hint for a moment
 const COPIED: Record<CopyKind, string> = { all: 'Entry copied.', coordinates: 'Coordinates copied.', population: 'Population copied.' };
 
@@ -40,6 +42,7 @@ function GermanyMap() {
   const [fitKey, setFitKey] = useState<string | null>(null); // new value = zoom to markers
   const [edits, setEdits] = useState(() => start<LatLng[]>([]));
   const [menu, setMenu] = useState<{ index: number; x: number; y: number } | null>(null);
+  const [cellsById, setCellsById] = useState<Record<string, Cell[] | null>>({});
   const [busy, setBusy] = useState(false);
   const [coordInput, setCoordInput] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -64,6 +67,7 @@ function GermanyMap() {
 
   const markers = edits.present;
   const crossing = edgesCross(markers);
+  const cells = (selectedId && cellsById[selectedId]) || null;
 
   const changeMarkers = (next: LatLng[]) => {
     setEdits((h) => push(h, next));
@@ -135,10 +139,13 @@ function GermanyMap() {
     if (crossing) return;
     setBusy(true);
     try {
-      const population = await countPopulation(API_URL, gridId, latLngsToWktPolygon(markers));
-      const entry: Entry = { id: crypto.randomUUID(), markers, population };
+      const count = await countPopulation(API_URL, gridId, latLngsToWktPolygon(markers));
+      const entry: Entry = { id: crypto.randomUUID(), markers, population: count.population };
       setHistory((h) => addEntry(h, entry));
+      setCellsById((c) => ({ ...c, [entry.id]: count.cells }));
       setSelectedId(entry.id);
+      if (count.cells === null) setMessage(TOO_MANY_CELLS);
+      else if (count.cells.length === 0) setMessage(NO_CELLS);
     } catch {
       setMessage('Enumeration failed. Try again.');
     } finally {
@@ -159,6 +166,7 @@ function GermanyMap() {
   const clearHistory = () => {
     setConfirmClear(false);
     setHistory([]);
+    setCellsById({});
     setSelectedId(null);
     setMessage('History cleared.');
   };
@@ -245,6 +253,7 @@ function GermanyMap() {
         <MapWithMarkers
           center={germanyCenter}
           markers={markers}
+          cells={cells}
           crossing={crossing}
           onMarkersChange={changeMarkers}
           onMarkerMenu={(index, x, y) => setMenu({ index, x, y })}

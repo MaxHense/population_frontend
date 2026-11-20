@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Polygon, useMap, useMapEvent } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, Tooltip, useMap, useMapEvent } from 'react-leaflet';
 import { divIcon, type LatLngExpression, type LeafletEvent, type LeafletMouseEvent, type Marker as LeafletMarker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { LatLng } from '../history';
+import type { Cell } from '../api';
+import { formatPopulation, type LatLng } from '../history';
 import { gripSvg, markerSvg } from '../icons';
 import { midpoints } from '../polygon';
 
@@ -12,11 +13,13 @@ const gripIcon = divIcon({ html: gripSvg(10), className: 'w95-pin', iconSize: [1
 // not interactive: a click inside the polygon still sets a marker
 const outline = { color: '#000000', weight: 1, fillColor: '#808080', fillOpacity: 0.3, interactive: false };
 const crossingOutline = { ...outline, color: '#ff0000', weight: 2 };
+const cellStyle = { color: '#008080', weight: 1, fillColor: '#008080', fillOpacity: 0.35 };
 
 type MapWithMarkersProps = {
   center: LatLngExpression;
   zoom?: number;
   markers: LatLng[];
+  cells: Cell[] | null;
   crossing: boolean;
   onMarkersChange: (markers: LatLng[]) => void;
   onMarkerMenu: (index: number, x: number, y: number) => void;
@@ -45,7 +48,7 @@ function FitToMarkers({ markers, fitKey }: { markers: LatLng[]; fitKey: string |
 }
 
 export function MapWithMarkers({
-  center, zoom = 6, markers, crossing, onMarkersChange, onMarkerMenu, fitKey,
+  center, zoom = 6, markers, cells, crossing, onMarkersChange, onMarkerMenu, fitKey,
 }: MapWithMarkersProps) {
   const openMenu = (index: number) => (e: LeafletMouseEvent) => {
     e.originalEvent.preventDefault();
@@ -60,6 +63,11 @@ export function MapWithMarkers({
       />
       <ClickToAdd onAdd={(m) => onMarkersChange([...markers, m])} />
       <FitToMarkers markers={markers} fitKey={fitKey} />
+      {cells?.map((cell, i) => (
+        <Polygon key={`cell-${i}-${cell.polygon[0].join()}`} positions={cell.polygon} pathOptions={cellStyle}>
+          <Tooltip sticky className="w95-tip">{formatPopulation(cell.population)} people</Tooltip>
+        </Polygon>
+      ))}
       {markers.length >= 2 && <Polygon positions={markers} pathOptions={crossing ? crossingOutline : outline} />}
 
       {midpoints(markers).map(({ insertAt: index, point }) => (
