@@ -4,7 +4,7 @@ import { MapWithMarkers } from './MapWithMarkers';
 import { latLngsToWktPolygon } from '../wkt';
 import { API_URL, countPopulation, fetchGrids } from '../api';
 import {
-  addEntry, formatCoordinates, formatPopulation, loadHistory, saveHistory, type Entry, type LatLng,
+  addEntry, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory, type Entry, type LatLng,
 } from '../history';
 import { markerSvg, personSvg } from '../icons';
 import '../win95.css';
@@ -12,6 +12,7 @@ import '../win95.css';
 const germanyCenter: LatLngExpression = [51.255583, 10.352611];
 const MARKER_ICON = { __html: markerSvg(16) }; // static, generated from our own pixel art
 const PERSON_ICON = { __html: personSvg(16) };
+const EXAMPLE = '52.5200, 13.4050; 52.4000, 13.5123; 52.4500, 13.3000';
 
 function browserStorage() {
   try {
@@ -27,6 +28,7 @@ function GermanyMap() {
   const [fitKey, setFitKey] = useState<string | null>(null); // new value = zoom to markers
   const [markers, setMarkers] = useState<LatLng[]>([]);
   const [busy, setBusy] = useState(false);
+  const [coordInput, setCoordInput] = useState('');
   const [status, setStatus] = useState('Click the map to set at least 3 markers.');
   // ponytail: first grid only, add a grid picker when there is more than one dataset
   const [gridId, setGridId] = useState<number | null>(null);
@@ -53,7 +55,25 @@ function GermanyMap() {
   const startNew = () => {
     setSelectedId(null);
     setMarkers([]);
+    setCoordInput('');
     setStatus('Click the map to set at least 3 markers.');
+  };
+
+  const applyCoordinates = () => {
+    try {
+      const parsed = parseCoordinates(coordInput);
+      if (parsed.length === 0) {
+        setStatus(`Paste coordinates like: ${EXAMPLE}`);
+        return;
+      }
+      changeMarkers(parsed);
+      setFitKey(`input-${Date.now()}`);
+      setStatus(parsed.length < 3
+        ? `${parsed.length} marker(s) set. At least 3 are needed.`
+        : `${parsed.length} markers set. Click Enumerate.`);
+    } catch (error) {
+      setStatus((error as Error).message);
+    }
   };
 
   const enumerate = async () => {
@@ -94,6 +114,17 @@ function GermanyMap() {
           <button type="button" className="w95-button" onClick={enumerate} disabled={busy}>Enumerate</button>
           <button type="button" className="w95-button" onClick={startNew}>New</button>
         </div>
+
+        <input
+          className="w95-input"
+          type="text"
+          aria-label="Coordinates (lat, lng; lat, lng; …), Enter sets the markers"
+          placeholder={EXAMPLE}
+          spellCheck={false}
+          value={coordInput}
+          onChange={(e) => setCoordInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && applyCoordinates()}
+        />
 
         <ul className="w95-list" role="listbox" aria-label="Enumerations">
           {history.length === 0 && <li className="w95-empty">No enumerations yet.</li>}

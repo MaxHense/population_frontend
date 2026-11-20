@@ -61,6 +61,28 @@
   text-shadow: 1px 1px var(--w95-white);
 }
 
+.w95-input {
+  height: 21px;
+  padding: 3px 4px;
+  background: var(--w95-white);
+  color: #000;
+  font: inherit;
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--w95-sunken);
+}
+.w95-input:focus {
+  outline: none;
+}
+.w95-input::placeholder {
+  color: var(--w95-shadow);
+  opacity: 1;
+}
+/* example only while the field is focused */
+.w95-input:not(:focus)::placeholder {
+  color: transparent;
+}
+
 .w95-list {
   flex: 1;
   min-height: 0;

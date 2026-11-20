@@ -16,6 +16,22 @@ export const formatPopulation = (population: number | null) => thousands.format(
 export const formatCoordinates = (markers: LatLng[]) =>
   markers.map(([lat, lng]) => `${lat.toFixed(4)}, ${lng.toFixed(4)}`).join('; ');
 
+const NUMBER = /^-?\d+(\.\d+)?$/;
+
+/** Reverse of formatCoordinates: "lat, lng; lat, lng". Throws with a message for the status bar. */
+export function parseCoordinates(text: string): LatLng[] {
+  return text.split(';').map((p) => p.trim()).filter(Boolean).map((point, i) => {
+    const parts = point.split(',').map((x) => x.trim());
+    if (parts.length !== 2 || !parts.every((x) => NUMBER.test(x))) {
+      throw new Error(`Point ${i + 1}: expected "lat, lng" with a dot as decimal separator.`);
+    }
+    const [lat, lng] = parts.map(Number);
+    if (lat < -90 || lat > 90) throw new Error(`Point ${i + 1}: latitude must be between -90 and 90.`);
+    if (lng < -180 || lng > 180) throw new Error(`Point ${i + 1}: longitude must be between -180 and 180.`);
+    return [lat, lng];
+  });
+}
+
 export const addEntry = (history: Entry[], entry: Entry) => [entry, ...history];
 
 const isEntry = (e: unknown): e is Entry => {

@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { addEntry, formatCoordinates, formatPopulation, loadHistory, saveHistory, type Entry } from './history';
+import {
+  addEntry, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory, type Entry,
+} from './history';
 
 const entry = (id: string, population: number | null = 1): Entry => ({
   id,
@@ -70,5 +72,35 @@ describe('history storage', () => {
     };
     expect(loadHistory(blocked)).toEqual([]);
     expect(() => saveHistory([entry('a')], blocked)).not.toThrow();
+  });
+});
+
+describe('parseCoordinates', () => {
+  test('reads the format the list shows', () => {
+    expect(parseCoordinates('52.5200, 13.4050; 52.4000, 13.5123')).toEqual([[52.52, 13.405], [52.4, 13.5123]]);
+  });
+
+  test('round trip: displayed coordinates can be pasted back', () => {
+    const markers: [number, number][] = [[48.06, 11.36], [48.3, 11.54], [-33.8688, 151.2093]];
+    expect(parseCoordinates(formatCoordinates(markers))).toEqual(markers);
+  });
+
+  test('tolerates extra spaces, line breaks and a trailing semicolon', () => {
+    expect(parseCoordinates('  52.52 ,13.4 ;\n 52.4,  13.5 ; ')).toEqual([[52.52, 13.4], [52.4, 13.5]]);
+  });
+
+  test('empty input gives no markers', () => {
+    expect(parseCoordinates('   ')).toEqual([]);
+  });
+
+  test.each([
+    ['52.52 13.40', /point 1/i],
+    ['52.52, 13.40; 52.4', /point 2/i],
+    ['52.52, 13.40; abc, 13.5', /point 2/i],
+    ['52,52, 13,40', /point 1/i],
+    ['91, 13.4', /latitude/i],
+    ['52.5, 181', /longitude/i],
+  ])('"%s" is rejected with a helpful message', (input, message) => {
+    expect(() => parseCoordinates(input)).toThrow(message);
   });
 });
