@@ -5,8 +5,8 @@ import 'leaflet/dist/leaflet.css';
 import type { LatLng } from '../history';
 import { markerSvg } from '../icons';
 
-// 16x16 pixel pin drawn at 2x; anchor = needle tip (bottom centre)
-const pinIcon = divIcon({ html: markerSvg(32), className: 'w95-pin', iconSize: [32, 32], iconAnchor: [16, 31] });
+// 16x16 pixel pin drawn at 1.5x (24 px); anchor = needle tip (bottom centre)
+const pinIcon = divIcon({ html: markerSvg(24), className: 'w95-pin', iconSize: [24, 24], iconAnchor: [12, 23] });
 
 type MapWithMarkersProps = {
   center: LatLngExpression;
