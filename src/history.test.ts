@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  addEntry, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory, type Entry,
+  addEntry, copyText, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory, type Entry,
 } from './history';
 
 const entry = (id: string, population: number | null = 1): Entry => ({
@@ -102,5 +102,23 @@ describe('parseCoordinates', () => {
     ['52.5, 181', /longitude/i],
   ])('"%s" is rejected with a helpful message', (input, message) => {
     expect(() => parseCoordinates(input)).toThrow(message);
+  });
+});
+
+describe('copyText', () => {
+  const e: Entry = { id: 'x', markers: [[52.52, 13.405], [52.4, 13.5123]], population: 1832227 };
+
+  test('coordinates in the list format, so they can be pasted into the input field', () => {
+    expect(copyText(e, 'coordinates')).toBe('52.5200, 13.4050; 52.4000, 13.5123');
+    expect(parseCoordinates(copyText(e, 'coordinates'))).toEqual(e.markers);
+  });
+
+  test('population as raw number, without thousands separators', () => {
+    expect(copyText(e, 'population')).toBe('1832227');
+    expect(copyText({ ...e, population: null }, 'population')).toBe('0');
+  });
+
+  test('all = coordinates, tab, population (one spreadsheet row)', () => {
+    expect(copyText(e, 'all')).toBe('52.5200, 13.4050; 52.4000, 13.5123\t1832227');
   });
 });

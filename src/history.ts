@@ -32,6 +32,17 @@ export function parseCoordinates(text: string): LatLng[] {
   });
 }
 
+export type CopyKind = 'all' | 'coordinates' | 'population';
+
+/** Clipboard text: coordinates as shown (pasteable into the input), population as raw number. */
+export function copyText(entry: Entry, kind: CopyKind): string {
+  const coordinates = formatCoordinates(entry.markers);
+  const population = String(entry.population ?? 0);
+  if (kind === 'coordinates') return coordinates;
+  if (kind === 'population') return population;
+  return `${coordinates}\t${population}`;
+}
+
 export const addEntry = (history: Entry[], entry: Entry) => [entry, ...history];
 
 const isEntry = (e: unknown): e is Entry => {

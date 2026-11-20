@@ -61,7 +61,19 @@ export const PERSON_ART = [
   '................',
 ];
 
+// Title bar close cross, 8x7 like the Win95 caption button.
+export const CLOSE_ART = [
+  'KK....KK',
+  '.KK..KK.',
+  '..KKKK..',
+  '...KK...',
+  '..KKKK..',
+  '.KK..KK.',
+  'KK....KK',
+];
+
 const MARKER_COLOURS = { K: '#000000', R: '#ff0000', D: '#800000', W: '#ffffff', S: '#c0c0c0', G: '#808080' };
 
 export const markerSvg = (size: number) => pixelSvg(MARKER_ART, MARKER_COLOURS, size);
 export const personSvg = (size: number) => pixelSvg(PERSON_ART, { '#': 'currentColor' }, size);
+export const closeSvg = () => pixelSvg(CLOSE_ART, { K: '#000000' }, 8);

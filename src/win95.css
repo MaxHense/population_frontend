@@ -177,6 +177,81 @@
   line-height: 15px;
 }
 
+.w95-small {
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  width: 18px;
+  height: 15px;
+  padding: 0 0 4px;
+  line-height: 10px;
+}
+.w95-small:active:not(:disabled) {
+  padding: 1px 0 3px 1px;
+}
+.w95-row[aria-selected="true"] .w95-small {
+  color: #000; /* keep the button readable on the blue selection */
+}
+
+/* dialogs: native <dialog>, Win95 window frame, no dimmed backdrop */
+.w95-dialog {
+  margin: auto; /* Tailwind's reset sets margin: 0, which breaks native centring */
+  min-width: 260px;
+  padding: 3px;
+  border: none;
+  background: var(--w95-face);
+  color: #000;
+  font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 12px;
+  box-shadow: var(--w95-raised);
+}
+.w95-dialog::backdrop {
+  background: transparent;
+}
+
+.w95-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 18px;
+  padding: 0 2px 0 4px;
+  background: var(--w95-select);
+  color: var(--w95-white);
+  font-weight: bold;
+}
+.w95-titlebar-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+}
+.w95-titlebar-close:active:not(:disabled) {
+  padding: 1px 0 0 1px;
+}
+.w95-close-icon {
+  display: flex;
+}
+
+.w95-dialog-body {
+  padding: 12px 10px 8px;
+}
+.w95-dialog-text {
+  margin: 0 0 14px;
+}
+.w95-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.w95-dialog-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .w95-map {
   position: relative;
   min-height: 0;
