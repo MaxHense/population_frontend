@@ -165,8 +165,16 @@
 }
 
 .w95-status {
-  min-height: 20px;
+  /* fixed 2 lines, so the buttons below never move; longer text is cut with … */
+  flex: none;
+  height: 36px;
   padding: 3px 4px;
+  line-height: 15px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   box-shadow: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow);
 }
 
