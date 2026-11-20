@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvent } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, useMap, useMapEvent } from 'react-leaflet';
 import { divIcon, type LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LatLng } from '../history';
 import { markerSvg } from '../icons';
 
 // 16x16 pixel pin drawn at 1.5x (24 px); anchor = needle tip (bottom centre)
+// thin black outline, slightly grey fill: the map stays readable inside.
+// Not interactive, so a click inside the polygon still sets a marker.
+const outline = { color: '#000000', weight: 1, fillColor: '#808080', fillOpacity: 0.3, interactive: false };
+
 const pinIcon = divIcon({ html: markerSvg(24), className: 'w95-pin', iconSize: [24, 24], iconAnchor: [12, 23] });
 
 type MapWithMarkersProps = {
@@ -38,6 +42,7 @@ export function MapWithMarkers({ center, zoom = 6, markers, onMarkersChange, fit
       />
       <ClickToAdd onAdd={(m) => onMarkersChange([...markers, m])} />
       <FitToMarkers markers={markers} fitKey={fitKey} />
+      {markers.length >= 2 && <Polygon positions={markers} pathOptions={outline} />}
       {markers.map((pos, idx) => (
         <Marker
           key={`${idx}-${pos[0]}-${pos[1]}`}
