@@ -83,6 +83,11 @@
   color: transparent;
 }
 
+.w95-wide {
+  width: 100%;
+  flex: none;
+}
+
 .w95-list {
   flex: 1;
   min-height: 0;

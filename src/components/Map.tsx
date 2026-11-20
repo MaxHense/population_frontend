@@ -186,7 +186,7 @@ function GermanyMap() {
         <div className="w95-toolbar">
           <button type="button" className="w95-button" onClick={enumerate} disabled={busy || crossing}>Enumerate</button>
           <button type="button" className="w95-button" onClick={startNew}>New</button>
-          <button type="button" className="w95-button" onClick={() => setConfirmClear(true)} disabled={history.length === 0}>
+          <button type="button" className="w95-button" onClick={() => changeMarkers([])} disabled={markers.length === 0}>
             Clear
           </button>
         </div>
@@ -243,6 +243,15 @@ function GermanyMap() {
             );
           })}
         </ul>
+
+        <button
+          type="button"
+          className="w95-button w95-wide"
+          onClick={() => setConfirmClear(true)}
+          disabled={history.length === 0}
+        >
+          Clear History
+        </button>
 
         <p className="w95-note">
           Only population data for Germany (Zensus 2022) is available. Accurate to 1 km.
