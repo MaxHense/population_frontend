@@ -1,79 +1,46 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvent } from 'react-leaflet';
-import type { LatLngExpression, LeafletMouseEvent } from 'leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvent } from 'react-leaflet';
+import type { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { LatLng } from '../history';
 
 type MapWithMarkersProps = {
   center: LatLngExpression;
   zoom?: number;
-  clearSignal: boolean;
-  onMarkersChange?: (positions: LatLngExpression[]) => void; // <-- Add this line
+  markers: LatLng[];
+  onMarkersChange: (markers: LatLng[]) => void;
+  fitKey: string | null; // changes when a saved entry is clicked -> zoom to its markers
 };
 
-function isLatLngObject(obj: any): obj is { lat: number; lng: number } {
-  return obj && typeof obj.lat === 'number' && typeof obj.lng === 'number';
+function ClickToAdd({ onAdd }: { onAdd: (marker: LatLng) => void }) {
+  useMapEvent('click', (e) => onAdd([e.latlng.lat, e.latlng.lng]));
+  return null;
 }
 
-function areLatLngEqual(a: LatLngExpression, b: LatLngExpression) {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a[0] === b[0] && a[1] === b[1];
-  }
-  if (isLatLngObject(a) && isLatLngObject(b)) {
-    return a.lat === b.lat && a.lng === b.lng;
-  }
-  return false;
-}
-
-function ClickMarkers({ clearSignal, onMarkersChange }: { clearSignal: boolean; onMarkersChange?: (positions: LatLngExpression[]) => void }) {
-  const [positions, setPositions] = useState<{ pos: LatLngExpression }[]>([]);
-
-  useMapEvent('click', (e: LeafletMouseEvent) => {
-    setPositions((prev) => {
-      const updated = [...prev, { pos: e.latlng }];
-      console.log(updated);
-      return updated;
-    });
-  });
-
+function FitToMarkers({ markers, fitKey }: { markers: LatLng[]; fitKey: string | null }) {
+  const map = useMap();
   useEffect(() => {
-    if (clearSignal) {
-      setPositions([]);
-    }
-  }, [clearSignal]);
-
-  useEffect(() => {
-    if (onMarkersChange) {
-      onMarkersChange(positions.map(p => p.pos));
-    }
-  }, [positions, onMarkersChange]);
-
-  const handleMarkerClick = (clickedPos: LatLngExpression) => {
-    setPositions((prev) => prev.filter(({ pos }) => !(areLatLngEqual(pos, clickedPos))));
-  };
-
-  return (
-    <>
-      {positions.map(({ pos }, idx) => (
-        <Marker
-          key={idx}
-          position={pos}
-          eventHandlers={{
-            click: () => handleMarkerClick(pos),
-          }}
-        />
-      ))}
-    </>
-  );
+    if (fitKey && markers.length > 0) map.fitBounds(markers, { padding: [40, 40], maxZoom: 12 });
+  }, [fitKey]); // only on a new fitKey, not on every marker change
+  return null;
 }
 
-export function MapWithMarkers({ center, zoom = 6, clearSignal, onMarkersChange }: MapWithMarkersProps) {
+export function MapWithMarkers({ center, zoom = 6, markers, onMarkersChange, fitKey }: MapWithMarkersProps) {
   return (
     <MapContainer center={center} zoom={zoom} style={{ width: '100%', height: '100%' }}>
       <TileLayer
         attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <ClickMarkers clearSignal={clearSignal} onMarkersChange={onMarkersChange} />
+      <ClickToAdd onAdd={(m) => onMarkersChange([...markers, m])} />
+      <FitToMarkers markers={markers} fitKey={fitKey} />
+      {markers.map((pos, idx) => (
+        <Marker
+          key={`${idx}-${pos[0]}-${pos[1]}`}
+          position={pos}
+          eventHandlers={{ click: () => onMarkersChange(markers.filter((_, i) => i !== idx)) }}
+        />
+      ))}
     </MapContainer>
   );
 }
