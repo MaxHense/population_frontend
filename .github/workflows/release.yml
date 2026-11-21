@@ -1,11 +1,11 @@
 name: Release
 
-# A tag v* tests and builds the static site and publishes dist/ as a release asset
-# with its sha256 and a provenance attestation. No host specific config inside:
+# Publishing a GitHub release (tag v*, made in the UI) tests and builds the static site and
+# attaches dist/ as a release asset with its sha256 and a provenance attestation. No host specific config inside:
 # the deployment adds config.json. Deployments pin the sha256, never the tag.
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -14,7 +14,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # create the release
+      contents: write      # attach the assets
       id-token: write      # sign the attestation
       attestations: write
     steps:
@@ -42,8 +42,8 @@ jobs:
       with:
         subject-path: ${{ steps.package.outputs.file }}
 
-    - name: Publish
+    - name: Attach to release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         FILE: ${{ steps.package.outputs.file }}
-      run: gh release create "$GITHUB_REF_NAME" "$FILE" "$FILE.sha256" --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$FILE.sha256"
+      run: gh release upload "$GITHUB_REF_NAME" "$FILE" "$FILE.sha256"
