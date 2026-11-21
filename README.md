@@ -11,7 +11,6 @@ npm run dev
 ```
 
 - Map: http://localhost:5173
-- Admin (upload grids): http://localhost:5173/admin, needs the backend's `ADMIN_TOKEN`
 
 The backend must allow this origin in `CORS_ORIGINS`.
 
