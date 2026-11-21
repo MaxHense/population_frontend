@@ -6,7 +6,6 @@ Map to draw a polygon and get the population inside it. Talks to the [population
 
 ```bash
 npm ci
-cp .env.example .env    # VITE_API_URL = backend URL as seen from the browser
 npm run dev
 ```
 
@@ -16,9 +15,14 @@ The backend must allow this origin in `CORS_ORIGINS`.
 
 ## Configuration
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `VITE_API_URL` | `http://localhost:8000` | Backend base URL. Build time: baked into the static build. |
+Runtime, not build time: the page reads `/config.json` next to `index.html`.
+
+```json
+{ "apiUrl": "https://api.example.org" }
+```
+
+`public/config.json` points to `http://localhost:8000` for development.
+A deployment replaces it, so the same build runs on any static host.
 
 ## Test and build
 

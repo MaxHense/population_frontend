@@ -4,7 +4,7 @@ import { ContextMenu } from './ContextMenu';
 import { MapWithMarkers } from './MapWithMarkers';
 import { Win95Dialog } from './Win95Dialog';
 import { latLngsToWktPolygon } from '../wkt';
-import { API_URL, countPopulation, type Cell } from '../api';
+import { countPopulation, getApiUrl, type Cell } from '../api';
 import {
   addEntry, copyText, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory,
   type CopyKind, type Entry, type LatLng,
@@ -126,7 +126,7 @@ function GermanyMap() {
     if (crossing) return;
     setBusy(true);
     try {
-      const count = await countPopulation(API_URL, latLngsToWktPolygon(markers));
+      const count = await countPopulation(await getApiUrl(), latLngsToWktPolygon(markers));
       const entry: Entry = { id: crypto.randomUUID(), markers, population: count.population };
       setHistory((h) => addEntry(h, entry));
       setCellsById((c) => ({ ...c, [entry.id]: count.cells }));
