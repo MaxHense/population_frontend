@@ -1,0 +1,49 @@
+name: Release
+
+# A tag v* tests and builds the static site and publishes dist/ as a release asset
+# with its sha256 and a provenance attestation. No host specific config inside:
+# the deployment adds config.json. Deployments pin the sha256, never the tag.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # create the release
+      id-token: write      # sign the attestation
+      attestations: write
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24   # no cache: a release must not depend on a cache
+    - run: npm ci
+    - run: npm test
+    - run: npm run build
+
+    - name: Package
+      id: package
+      run: |
+        file="population_frontend-$GITHUB_REF_NAME.tar.gz"
+        rm dist/config.json   # local dev config, the deployment writes its own
+        tar --sort=name --owner=0 --group=0 --numeric-owner --mtime=@0 -C dist -cf - . | gzip -n > "$file"
+        sha256sum "$file" > "$file.sha256"
+        echo "file=$file" >> "$GITHUB_OUTPUT"
+        echo "sha256: \`$(cut -d' ' -f1 "$file.sha256")\`" >> "$GITHUB_STEP_SUMMARY"
+
+    - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      with:
+        subject-path: ${{ steps.package.outputs.file }}
+
+    - name: Publish
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE: ${{ steps.package.outputs.file }}
+      run: gh release create "$GITHUB_REF_NAME" "$FILE" "$FILE.sha256" --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$FILE.sha256"

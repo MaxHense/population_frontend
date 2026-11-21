@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { countPopulation } from './api';
+import { countPopulation, loadApiUrl } from './api';
 
 function mockFetch(status: number, body: unknown = {}) {
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -42,5 +42,27 @@ describe('countPopulation', () => {
   test('rejects when the api fails', async () => {
     mockFetch(500);
     await expect(countPopulation('https://api.example.org', 'POLYGON ((0 0, 0 1, 1 1, 0 0))')).rejects.toThrow();
+  });
+});
+
+describe('loadApiUrl', () => {
+  test('reads the API address from /config.json next to index.html, never cached', async () => {
+    const fetch = mockFetch(200, { apiUrl: 'https://api.example.org' });
+    await expect(loadApiUrl()).resolves.toBe('https://api.example.org');
+    expect(fetch.mock.calls[0][0]).toBe('/config.json');
+    expect(fetch.mock.calls[0][1]).toEqual({ cache: 'no-cache' });
+  });
+
+  test.each([undefined, 42, '', 'api.example.org', 'javascript:alert(1)', 'ftp://api.example.org'])(
+    'rejects %s as apiUrl',
+    async (apiUrl) => {
+      mockFetch(200, { apiUrl });
+      await expect(loadApiUrl()).rejects.toThrow('apiUrl');
+    },
+  );
+
+  test('rejects when config.json is missing', async () => {
+    mockFetch(404);
+    await expect(loadApiUrl()).rejects.toThrow();
   });
 });
