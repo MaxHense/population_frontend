@@ -58,7 +58,7 @@ export function MapWithMarkers({
   return (
     <MapContainer center={center} zoom={zoom} style={{ width: '100%', height: '100%' }}>
       <TileLayer
-        attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+        attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors | Population: &copy; European Union, <a href="https://ec.europa.eu/eurostat/web/gisco/geodata/population-distribution/population-grids">Eurostat</a> (modified)'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ClickToAdd onAdd={(m) => onMarkersChange([...markers, m])} />

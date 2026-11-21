@@ -4,7 +4,7 @@ import { ContextMenu } from './ContextMenu';
 import { MapWithMarkers } from './MapWithMarkers';
 import { Win95Dialog } from './Win95Dialog';
 import { latLngsToWktPolygon } from '../wkt';
-import { API_URL, countPopulation, fetchGrids, type Cell } from '../api';
+import { API_URL, countPopulation, type Cell } from '../api';
 import {
   addEntry, copyText, formatCoordinates, formatPopulation, loadHistory, parseCoordinates, saveHistory,
   type CopyKind, type Entry, type LatLng,
@@ -14,7 +14,7 @@ import { edgesCross } from '../polygon';
 import { canRedo, canUndo, push, redo, start, undo } from '../undo';
 import '../win95.css';
 
-const germanyCenter: LatLngExpression = [51.255583, 10.352611];
+const europeCenter: LatLngExpression = [50, 10];
 const MARKER_ICON = { __html: markerSvg(16) }; // static, generated from our own pixel art
 const PERSON_ICON = { __html: personSvg(16) };
 const EXAMPLE = '52.5200, 13.4050; 52.4000, 13.5123; 52.4500, 13.3000';
@@ -48,15 +48,6 @@ function GermanyMap() {
   const [message, setMessage] = useState<string | null>(null);
   const [copyEntry, setCopyEntry] = useState<Entry | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
-  // ponytail: first grid only, add a grid picker when there is more than one dataset
-  const [gridId, setGridId] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchGrids(API_URL)
-      .then((grids) => setGridId(grids[0]?.id ?? null))
-      .catch(() => setMessage('Server not reachable.'));
-  }, []);
-
   useEffect(() => {
     if (!message) return undefined;
     const timer = setTimeout(() => setMessage(null), MESSAGE_MS);
@@ -128,10 +119,6 @@ function GermanyMap() {
   };
 
   const enumerate = async () => {
-    if (gridId === null) {
-      setMessage('No population data available. Server not reachable or no grid uploaded (/admin).');
-      return;
-    }
     if (markers.length < 3) {
       setMessage('Set at least 3 markers to form a polygon.');
       return;
@@ -139,7 +126,7 @@ function GermanyMap() {
     if (crossing) return;
     setBusy(true);
     try {
-      const count = await countPopulation(API_URL, gridId, latLngsToWktPolygon(markers));
+      const count = await countPopulation(API_URL, latLngsToWktPolygon(markers));
       const entry: Entry = { id: crypto.randomUUID(), markers, population: count.population };
       setHistory((h) => addEntry(h, entry));
       setCellsById((c) => ({ ...c, [entry.id]: count.cells }));
@@ -254,13 +241,17 @@ function GermanyMap() {
         </button>
 
         <p className="w95-note">
-          Only population data for Germany (Zensus 2022) is available. Accurate to 1 km.
+          Population data for the EU, Norway, Switzerland and Liechtenstein (Eurostat Census 2021). Accurate to 1 km.
+        </p>
+        <p className="w95-note">
+          <a href="/datenschutz.html">Datenschutz</a>
         </p>
       </aside>
 
       <main className="w95-map">
         <MapWithMarkers
-          center={germanyCenter}
+          center={europeCenter}
+          zoom={4}
           markers={markers}
           cells={cells}
           crossing={crossing}
